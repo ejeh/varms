@@ -24,7 +24,7 @@ export class MailerService {
   async sendActivationEmail(userEmail: string, token: string) {
     try {
       const transporter = await this.getTransporter();
-      const from = process.env.MAIL_FROM || 'no-reply@vams.local';
+      const from = process.env.MAIL_FROM || 'no-reply@varms.local';
       const frontendUrl =
         process.env.FRONTEND_URL ||
         process.env.APP_BASE_URL ||
@@ -33,9 +33,9 @@ export class MailerService {
       await transporter.sendMail({
         from,
         to: userEmail,
-        subject: 'Activate your VAMS account',
-        text: `Welcome to VAMS! Activate your account: ${link}`,
-        html: `<p>Welcome to VAMS!</p><p>Activate your account by clicking <a href="${link}">here</a>.</p>`,
+        subject: 'Activate your VARMS account',
+        text: `Welcome to VARMS! Activate your account: ${link}`,
+        html: `<p>Welcome to VARMS!</p><p>Activate your account by clicking <a href="${link}">here</a>.</p>`,
       });
     } catch (e) {
       this.logger.warn(`Activation email failed: ${e?.message || e}`);
@@ -45,7 +45,7 @@ export class MailerService {
   async sendPasswordResetEmail(userEmail: string, token: string) {
     try {
       const transporter = await this.getTransporter();
-      const from = process.env.MAIL_FROM || 'no-reply@vams.local';
+      const from = process.env.MAIL_FROM || 'no-reply@varms.local';
       const frontendUrl =
         process.env.FRONTEND_URL ||
         process.env.APP_BASE_URL ||
@@ -54,7 +54,7 @@ export class MailerService {
       await transporter.sendMail({
         from,
         to: userEmail,
-        subject: 'Reset your VAMS password',
+        subject: 'Reset your VARMS password',
         text: `Reset your password using this link: ${link}`,
         html: `<p>Reset your password by clicking <a href="${link}">this link</a>.</p>`,
       });
