@@ -51,6 +51,15 @@ export class User {
 
   @Prop()
   reset_password_expires_at?: Date;
+
+  @Prop({ default: false })
+  is_active: boolean;
+
+  @Prop()
+  activation_token?: string;
+
+  @Prop()
+  activation_expires_at?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

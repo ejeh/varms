@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuditModule } from '../audit/audit.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
+import { MailerService } from './mailer.service';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
       signOptions: { expiresIn: '15m' },
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, MailerService],
   controllers: [AuthController],
 })
 export class AuthModule {}

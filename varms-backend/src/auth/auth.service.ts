@@ -14,6 +14,10 @@ import { AuditService } from '../audit/audit.service';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-reset.dto';
 import * as crypto from 'crypto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { ActivateAccountDto } from './dto/activate.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { MailerService } from './mailer.service';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +26,26 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly auditService: AuditService,
     private readonly notificationsService: NotificationsService,
+    private readonly mailer: MailerService,
   ) {}
+
+  async register(dto: CreateUserDto) {
+    const user = await this.usersService.create(dto);
+    const rawToken = uuidv4();
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
+    await (this.usersService as any).update((user as any)._id.toString(), {
+      activation_token: tokenHash,
+      activation_expires_at: expires,
+      is_active: false,
+    });
+    await this.mailer.sendActivationEmail((user as any).email, rawToken);
+    await this.auditService.log('registration', (user as any)._id.toString());
+    return { success: true };
+  }
 
   async validateUser(email: string, password: string) {
     const user = await this.usersService.findByEmail(email);
@@ -39,6 +62,9 @@ export class AuthService {
         email: dto.email,
       });
       throw new UnauthorizedException('Invalid credentials');
+    }
+    if (!(user as any).is_active) {
+      throw new UnauthorizedException('Account not activated');
     }
     const payload = {
       sub: (user as any)._id.toString(),
@@ -175,13 +201,7 @@ export class AuthService {
       reset_password_token_hash: tokenHash,
       reset_password_expires_at: expires,
     });
-    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3001';
-    const resetLink = `${baseUrl}/reset-password?token=${rawToken}`;
-    await this.notificationsService.sendEmail(
-      (user as any)._id.toString(),
-      'Password Reset Request',
-      `Click the link to reset your password: ${resetLink}`,
-    );
+    await this.mailer.sendPasswordResetEmail((user as any).email, rawToken);
     await this.auditService.log(
       'forgot_password_requested',
       (user as any)._id.toString(),
@@ -202,12 +222,35 @@ export class AuthService {
       })
       .exec();
     if (!user) throw new UnauthorizedException('Invalid or expired token');
-    const password_hash = await bcrypt.hash(dto.password, 10);
+    const password_hash = await bcrypt.hash(dto.newPassword, 10);
     user.password_hash = password_hash;
     user.reset_password_token_hash = undefined as any;
     user.reset_password_expires_at = undefined as any;
     await user.save();
     await this.auditService.log('password_reset', (user as any)._id.toString());
+    return { success: true };
+  }
+
+  async activateAccount(dto: ActivateAccountDto) {
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(dto.token)
+      .digest('hex');
+    const user = await (this.usersService as any).userModel
+      .findOne({
+        activation_token: tokenHash,
+        activation_expires_at: { $gt: new Date() },
+      })
+      .exec();
+    if (!user) throw new UnauthorizedException('Invalid or expired token');
+    user.is_active = true;
+    user.activation_token = undefined as any;
+    user.activation_expires_at = undefined as any;
+    await user.save();
+    await this.auditService.log(
+      'account_activated',
+      (user as any)._id.toString(),
+    );
     return { success: true };
   }
 }

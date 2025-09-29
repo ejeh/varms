@@ -14,5 +14,5 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(8)
   @IsNotEmpty()
-  password: string;
+  newPassword: string;
 }

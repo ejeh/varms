@@ -7,6 +7,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import { RequestOtpDto, VerifyOtpDto } from './dto/mfa.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-reset.dto';
+import { ActivateAccountDto } from './dto/activate.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -17,8 +18,8 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() dto: CreateUserDto) {
-    const user = await this.usersService.create(dto);
-    return { user };
+    const result = await this.authService.register(dto);
+    return result;
   }
 
   @Post('login')
@@ -67,5 +68,10 @@ export class AuthController {
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Post('activate')
+  activate(@Body() dto: ActivateAccountDto) {
+    return this.authService.activateAccount(dto);
   }
 }
